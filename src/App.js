@@ -1,53 +1,79 @@
 import React, { useState } from 'react';
-
 import MoviesList from './components/MoviesList';
 import './App.css';
 
 function App() {
   const [movies, setMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  function fetchMoviesHandler() {
+  //async OPTION
+  // use async to eliminate .then() chains and make code a little more readable
+  async function fetchMoviesHandler() {
     setIsLoading(true);
-    // must use then() becasue fetch is a promise meaning it wont trigger imediatley
-    fetch('https://swapi.dev/api/films/', {}
-    ).then(response => {
-      return response.json();
-      //this then() is needed for after the response.data transformation is done
-    }).then(data => {
-      //access data.results to target specific data in the data object
-      // constant transformedMovies holds the mapped data
+    setError(null);
+    try {
+      const response = await fetch('https://swapi.dev/api/films/', {})
+      if (!response.ok) {
+        throw new Error('Something went wrong')
+      }
+      const data = await response.json();
+
+
       const transformedMovies = data.results.map(movieData => {
         return {
           id: movieData.episdoe_id,
           title: movieData.title,
           openingText: movieData.opening_crawl,
-          releaseDate: movieData.release_date
+          releaseDate: movieData.release_date,
         }
       })
-      //state is used to update
       setMovies(transformedMovies);
-      setIsLoading(false)
-    })
+    } catch (error) {
+      setError(error.message);
+    }
+    setIsLoading(false);
   }
 
-  //async OPTION
-  //use async to eliminate .then() chains and make code a little more readable
+  let content = <p>Found no movies.</p>
 
-  // async function fetchMoviesHandler() {
-  //   const response = await fetch('https://swapi.dev/api/films/', {})
-  //   const data = await response.json()
+  if (movies.length > 0) {
+    content = <MoviesList movies={movies}></MoviesList>
+  }
 
-  //   const transformedMovies = data.results.map(movieData => {
-  //     return {
-  //       id: movieData.episdoe_id,
-  //       title: movieData.title,
-  //       openingText: movieData.opening_crawl,
-  //       releaseDate: movieData.release_date
-  //     }
+  if (error) {
+    content = <p>{error}</p>
+  }
+
+  if (isLoading) {
+    content = <p>Loading...</p>
+  }
+
+  //this is the older approach below to making an http request with .then() chains
+
+  //   // must use then() becasue fetch is a promise meaning it wont trigger imediatley
+  // function fetchMoviesHandler() {
+  //   fetch('https://swapi.dev/api/films/', {}
+  //   ).then(response => {
+  //     return response.json();
+  //     //this then() is needed for after the response.data transformation is done
+  //   }).then(data => {
+  //     //access data.results to target specific data in the data object
+  //     // constant transformedMovies holds the mapped data
+  //     const transformedMovies = data.results.map(movieData => {
+  //       return {
+  //         id: movieData.episdoe_id,
+  //         title: movieData.title,
+  //         openingText: movieData.opening_crawl,
+  //         releaseDate: movieData.release_date
+  //       }
+  //     })
+  //     //state is used to update
+  //     setMovies(transformedMovies);
+  //     setIsLoading(false)
   //   })
-  //   setMovies(transformedMovies);
   // }
+
 
   return (
     <React.Fragment>
@@ -55,10 +81,7 @@ function App() {
         <button onClick={fetchMoviesHandler}>Fetch Movies</button>
       </section>
       <section>
-        {!isLoading && movies.length > 0 && <MoviesList movies={movies} />}
-        {!isLoading && movies.length === 0 && <p>No movies found.</p> }
-        {isLoading && <p>LOADING...</p>}
-
+        {content}
       </section>
     </React.Fragment>
   );
